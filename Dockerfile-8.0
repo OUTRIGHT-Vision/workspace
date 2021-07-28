@@ -37,6 +37,7 @@ RUN set -eux \
         php8.0-curl \
         php8.0-intl \
         php8.0-xml \
+        php8.0-imagick \
         php8.0-mbstring \
         php8.0-mysql \
         php8.0-pgsql \
