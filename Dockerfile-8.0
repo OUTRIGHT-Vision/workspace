@@ -62,13 +62,12 @@ RUN set -eux \
         vim \
         nano \
         tree \
-        nodejs \
+        wget \
+	zip \
+	unzip \
+	redis-server \
         postgresql-client \
     && apt-get clean \
-    ###########
-    ### NPM ###
-    ###########
-    && npm install -g newman \
     #####################################
     # Composer:
     #####################################
@@ -76,3 +75,8 @@ RUN set -eux \
     && curl -s http://getcomposer.org/installer | php \
     && echo "export PATH=${PATH}:/var/www/vendor/bin" >> ~/.bashrc \
     && mv composer.phar /usr/local/bin/composer
+RUN set -eux \
+    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y --allow-downgrades --allow-remove-essential \
+        nodejs \
+    && npm install -g newman        
