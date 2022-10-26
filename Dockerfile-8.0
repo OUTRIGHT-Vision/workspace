@@ -62,8 +62,13 @@ RUN set -eux \
         vim \
         nano \
         tree \
+        nodejs \
         postgresql-client \
     && apt-get clean \
+    ###########
+    ### NPM ###
+    ###########
+    && npm install -g newman \
     #####################################
     # Composer:
     #####################################
