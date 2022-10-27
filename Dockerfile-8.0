@@ -21,6 +21,8 @@ RUN set -eux \
     # Add the "PHP 8" ppa
     && apt-get install -y software-properties-common \
     && add-apt-repository -y ppa:ondrej/php \
+    # Add mariadb repo
+    && add-apt-repository 'deb [arch=amd64,arm64,ppc64el] http://mirror.lstn.net/mariadb/repo/10.3/ubuntu bionic main' \
     #
     #--------------------------------------------------------------------------
     # Software's Installation
@@ -63,9 +65,10 @@ RUN set -eux \
         nano \
         tree \
         wget \
-	zip \
-	unzip \
-	redis-server \
+        mariadb-server-10.3 \
+	    zip \
+	    unzip \
+	    redis-server \
         postgresql-client \
     && apt-get clean \
     #####################################
@@ -79,4 +82,5 @@ RUN set -eux \
     && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
     && apt-get install -y --allow-downgrades --allow-remove-essential \
         nodejs \
+    && apt-get clean \    
     && npm install -g newman        
