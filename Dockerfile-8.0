@@ -56,6 +56,7 @@ RUN set -eux \
         pkg-config
 #libs
 RUN set -eux \
+    && apt-get update \
     && apt-get install -y --allow-downgrades --allow-remove-essential \
         libcurl4-openssl-dev \
         libedit-dev \
@@ -67,9 +68,9 @@ RUN set -eux \
         sqlite3 \
         git \
         curl \
-        vim \
         nano \
         tree \
+	zsh \
         wget
 #Servers        
 RUN set -eux \
@@ -93,3 +94,14 @@ RUN set -eux \
         nodejs \
     && apt-get clean \    
     && npm install -g newman xmysql newman-reporter-xunit        
+#OhMyZsh
+RUN set -eux \
+    && sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" \
+    && chsh -s $(which zsh)
+
+RUN set -eux \
+    && curl -fsSL https://jb.gg/qodana-cli/install | bash
+RUN set -eux \
+    && apt-get update --fix-missing && apt-get install -y --allow-downgrades \
+     --allow-remove-essential libgtk2.0-0 libgtk-3-0 libgbm-dev libnotify-dev libgconf-2-4 \
+     libnss3 libxss1 libasound2 libxtst6 xauth xvfb 
