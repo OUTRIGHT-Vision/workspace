@@ -15,16 +15,7 @@
   ```bash
   docker login
   ```
-- Know the target platform/architecture of the machines that will run this image (e.g. `linux/amd64` for most CI/prod servers, `linux/arm64` for Apple Silicon Macs).
-
-### ⚠️ Platform mismatch to fix first
-
-Each `Dockerfile-<version>` pins its base image with `FROM --platform=linux/amd64 ...`. If you build with `--platform=linux/arm64` while that pin is in place, Docker forces the amd64 base anyway (silently emulated) — the resulting image is **not actually arm64**, even though you tag/push it as one.
-
-Before publishing, pick one:
-- Remove the `--platform=linux/amd64` pin from the `FROM` line in the Dockerfile if you want to build natively for the host architecture (e.g. arm64 on Apple Silicon), or
-- Keep the pin and always build/tag with `--platform=linux/amd64` to match it, or
-- Build a real multi-arch image (see below) if both architectures are actually needed.
+- Build for `linux/amd64` — Bitbucket Pipelines runners are amd64, and each `Dockerfile-<version>` pins its base image with `FROM --platform=linux/amd64 ...`, so always match `--platform=linux/amd64` on the build too.
 
 ### Recommended steps (single architecture)
 
@@ -43,7 +34,7 @@ docker push firstavenueit/workspace:latest-85
 This works, but has an unnecessary manual lookup step and risks tagging the wrong image if multiple untagged builds exist locally:
 
 ```bash
-docker build --platform=linux/arm64 -f ./Dockerfile-8.5 .   # builds an untagged image
+docker build --platform=linux/amd64 -f ./Dockerfile-8.5 .   # builds an untagged image
 docker image ls --all                                       # find the new image's hash (no tag)
 docker tag <hash> firstavenueit/workspace:latest-85          # tag it manually
 docker push firstavenueit/workspace:latest-85                # push
