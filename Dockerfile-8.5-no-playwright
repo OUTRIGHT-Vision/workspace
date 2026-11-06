@@ -1,0 +1,103 @@
+#
+#--------------------------------------------------------------------------
+# Image Setup
+#--------------------------------------------------------------------------
+#
+
+FROM --platform=linux/amd64 phusion/baseimage:noble
+
+LABEL maintainer="Joaquín Marcher <joaquin.marcher@johnnybytes.com>"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    LC_CTYPE=en_US.UTF-8 \
+    LANG=en_US.UTF-8 \
+    TERM=xterm \
+    COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_NO_INTERACTION=1
+RUN locale-gen en_US.UTF-8
+EXPOSE 8000
+EXPOSE 8181
+
+# One layer for all apt work: fewer layers, no leftover lists, no `apt upgrade`
+# (base image is pinned already; upgrade only bloats + breaks reproducibility).
+RUN set -eux \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends software-properties-common gnupg \
+    && add-apt-repository -y ppa:ondrej/php \
+    && echo 'DPkg::options { "--force-confdef"; };' >> /etc/apt/apt.conf \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+        php8.5-cli \
+        php8.5-common \
+        php8.5-curl \
+        php8.5-intl \
+        php8.5-xml \
+        php8.5-imagick \
+        php8.5-mbstring \
+        php8.5-mysql \
+        php8.5-soap \
+        php8.5-sqlite3 \
+        php8.5-zip \
+        php8.5-bcmath \
+        php8.5-memcached \
+        php8.5-gd \
+        ca-certificates \
+        curl \
+        git \
+        rsync \
+        sqlite3 \
+        unzip \
+        zip \
+        mariadb-server \
+        redis-server \
+    && apt-get purge -y software-properties-common gnupg \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /usr/share/doc/* /usr/share/man/*
+
+# Composer straight from the official image (no curl|php, no installer run)
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+RUN echo "export PATH=\${PATH}:/var/www/vendor/bin" >> ~/.bashrc
+
+#--------------------------------------------------------------------------
+# Speed tuning for test runs
+#--------------------------------------------------------------------------
+
+# PHP CLI: opcache + JIT, no memory cap, no timestamp stat on every include.
+RUN printf '%s\n' \
+    'opcache.enable_cli=1' \
+    'opcache.jit=tracing' \
+    'opcache.jit_buffer_size=128M' \
+    'opcache.validate_timestamps=0' \
+    'opcache.memory_consumption=256' \
+    'opcache.interned_strings_buffer=32' \
+    'opcache.max_accelerated_files=50000' \
+    'realpath_cache_size=4096K' \
+    'realpath_cache_ttl=600' \
+    'memory_limit=-1' \
+    'zend.assertions=-1' \
+    'assert.exception=0' \
+    > /etc/php/8.5/cli/conf.d/99-tests.ini
+
+# MariaDB: durability off. Data is throwaway in test containers.
+# For max speed also mount datadir on tmpfs: `docker run --tmpfs /var/lib/mysql ...`
+RUN printf '%s\n' \
+    '[mysqld]' \
+    'skip-log-bin' \
+    'skip-name-resolve' \
+    'innodb_flush_log_at_trx_commit=0' \
+    'innodb_flush_method=nosync' \
+    'innodb_doublewrite=0' \
+    'innodb_buffer_pool_size=256M' \
+    'innodb_log_file_size=64M' \
+    'sync_binlog=0' \
+    'skip-innodb-adaptive-hash-index' \
+    'performance_schema=OFF' \
+    'query_cache_type=0' \
+    > /etc/mysql/mariadb.conf.d/99-tests.cnf
+
+# Redis: no RDB snapshots, no AOF
+RUN sed -i -e 's/^save .*/# &/' -e 's/^appendonly .*/appendonly no/' /etc/redis/redis.conf \
+    && echo 'save ""' >> /etc/redis/redis.conf
