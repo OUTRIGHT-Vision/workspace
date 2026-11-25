@@ -65,11 +65,12 @@ RUN echo "export PATH=\${PATH}:/var/www/vendor/bin" >> ~/.bashrc
 # Speed tuning for test runs
 #--------------------------------------------------------------------------
 
-# PHP CLI: opcache + JIT, no memory cap, no timestamp stat on every include.
+# PHP CLI: opcache (JIT explicitly off: tracing JIT caused bogus ArgumentCountError
+# in google/gax), no memory cap, no timestamp stat on every include.
 RUN printf '%s\n' \
     'opcache.enable_cli=1' \
-    'opcache.jit=tracing' \
-    'opcache.jit_buffer_size=128M' \
+    'opcache.jit=disable' \
+    'opcache.jit_buffer_size=0' \
     'opcache.validate_timestamps=0' \
     'opcache.memory_consumption=256' \
     'opcache.interned_strings_buffer=32' \
